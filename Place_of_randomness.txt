@@ -1,0 +1,8 @@
+1. creating the split:
+
+--freezing the data
+
+1.5. Data order (iterative learning)
+
+2.Model
+--weight initialization
