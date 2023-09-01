@@ -55,3 +55,30 @@ Meaning of failure:
 feature:
 
 	vary model hyper parameters
+
+
+
+Overview of train test split :
+	100 samples
+	2 class classification/binary classification : image of carrot or turnip
+	50 samples : carrots   |
+	50 samples : turnips   |
+	This kind of data distribution : balanced/uniform
+
+
+	x amount data for training
+	n-x amount of data for testing
+
+	70 samples for training : 35 carrots , 35 turnips
+	30 samples for testing  : 12 carrots , 15 turnips
+
+	hence,
+	calculate some eval metric (train model (70 samples for training : 35 carrots , 35 turnips),(30 samples for testing  : 12 carrots , 15 turnips))==performance
+
+In practice :
+    train , development/validation , test
+
+	train = training the model(model type , model hyperparameters , model iterations)
+	dev = selecting the model
+	test = reportig the performance
+
