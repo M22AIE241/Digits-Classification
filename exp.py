@@ -18,6 +18,8 @@ from utils import preprocess_data, split_data, train_model, read_digits, predict
 
 # 1. Get the dataset
 X, y = read_digits()
+print("Length :",len(X))
+print("Images :",X[0].shape)
 
 # 2. Hyperparameter combinations
 # 2.1. SVM
