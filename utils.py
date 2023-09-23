@@ -47,7 +47,7 @@ def preprocess_data(data):
 # Split data into 50% train and 50% test subsets
 def split_data(x, y, test_size, random_state=1):
     X_train, X_test, y_train, y_test = train_test_split(
-    x, y, test_size=0.5,random_state=random_state
+    x, y, test_size=0.2,random_state=random_state
     )
     return X_train, X_test, y_train, y_test
 
