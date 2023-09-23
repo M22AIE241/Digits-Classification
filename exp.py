@@ -11,147 +11,40 @@ hand-written digits, from 0-9.
 # Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
 # License: BSD 3 clause
 
-# Standard scientific Python imports
-import matplotlib.pyplot as plt
-
 # Import datasets, classifiers and performance metrics
-from sklearn import datasets, metrics, svm
-from sklearn.model_selection import train_test_split
-from utils import preprocess_data,split_data,train_model
-#import pdb
-#from sklearn.svm import SVC
+from sklearn import metrics, svm
 
-# we will put all utils here
-# def preprocess_data(data):
-#     # flatten the images
-#     n_samples = len(data)
-#     data = data.reshape((n_samples, -1))
-#     return data
-
-# # Split data into 50% train and 50% test subsets
-# def split_data(x,y,test_size,random_state=1):
-#     X_train, X_test, y_train, y_test = train_test_split(
-#      x,y, test_size=0.5, shuffle=False,random_state=random_state
-#     )
-#     return X_train,X_test,y_train,y_test
-# # train the model of choice with the model params
-# def train_model(x,y,model_params,model_type="svm"):
-#     # Create a classifier: a support vector classifier
-#     if model_type=="svm":
-#         clf = svm.SVC
-#     model=clf(**model_params)
-#     #pdb.set_trace()
-#     # train the model
-#     model.fit(x,y)
-#     return model
-###############################################################################
-# Digits dataset
-# --------------
-#
-# The digits dataset consists of 8x8
-# pixel images of digits. The ``images`` attribute of the dataset stores
-# 8x8 arrays of grayscale values for each image. We will use these arrays to
-# visualize the first 4 images. The ``target`` attribute of the dataset stores
-# the digit each image represents and this is included in the title of the 4
-# plots below.
-#
-# Note: if we were working from image files (e.g., 'png' files), we would load
-# them using :func:`matplotlib.pyplot.imread`.
-
+from utils import preprocess_data, split_data, train_model, read_digits, predict_and_eval, train_test_dev_split, get_hyperparameter_combinations, tune_hparams
 
 # 1. Get the dataset
-digits = datasets.load_digits()
+X, y = read_digits()
 
-# 2. Qualitative sanity check of the data
-_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-for ax, image, label in zip(axes, digits.images, digits.target):
-    ax.set_axis_off()
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
-    ax.set_title("Training: %i" % label)
+# 2. Hyperparameter combinations
+# 2.1. SVM
+gamma_list = [0.001, 0.01, 0.1, 1]
+C_list = [1, 10, 100, 1000]
+h_params={}
+h_params['gamma'] = gamma_list
+h_params['C'] = C_list
+h_params_combinations = get_hyperparameter_combinations(h_params)
 
-###############################################################################
-# Classification
-# --------------
-#
-# To apply a classifier on this data, we need to flatten the images, turning
-# each 2-D array of grayscale values from shape ``(8, 8)`` into shape
-# ``(64,)``. Subsequently, the entire dataset will be of shape
-# ``(n_samples, n_features)``, where ``n_samples`` is the number of images and
-# ``n_features`` is the total number of pixels in each image.
-#
-# We can then split the data into train and test subsets and fit a support
-# vector classifier on the train samples. The fitted classifier can
-# subsequently be used to predict the value of the digit for the samples
-# in the test subset.
+test_sizes =  [0.1, 0.2, 0.3, 0.45]
+dev_sizes  =  [0.1, 0.2, 0.3, 0.45]
+for test_size in test_sizes:
+    for dev_size in dev_sizes:
+        train_size = 1- test_size - dev_size
+        # 3. Data splitting -- to create train and test sets                
+        X_train, X_test, X_dev, y_train, y_test, y_dev = train_test_dev_split(X, y, test_size=test_size, dev_size=dev_size)
+        # 4. Data preprocessing
+        X_train = preprocess_data(X_train)
+        X_test = preprocess_data(X_test)
+        X_dev = preprocess_data(X_dev)
+    
+        best_hparams, best_model, best_accuracy  = tune_hparams(X_train, y_train, X_dev, 
+        y_dev, h_params_combinations)
 
+        test_acc = predict_and_eval(best_model, X_test, y_test)
+        train_acc = predict_and_eval(best_model, X_train, y_train)
+        dev_acc = best_accuracy
 
-# 3. Data splitting -- to create train and test sets
-data=digits.images
-X_train,X_test,y_train,y_test=split_data(data,digits.target,test_size=0.3)
-
-# 4. Data preprocessing
-X_train=preprocess_data(X_train)
-X_test=preprocess_data(X_test)
-
-# 5. Model training
-model=train_model(X_train,y_train,{'gamma':0.001},model_type="svm")
-
-# 6. Getting model predictions on test set
-# Predict the value of the digit on the test subset
-predicted = model.predict(X_test)
-
-###############################################################################
-# Below we visualize the first 4 test samples and show their predicted
-# digit value in the title.
-
-# 7. Qualitative sanity check of the predictions
-_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-for ax, image, prediction in zip(axes, X_test, predicted):
-    ax.set_axis_off()
-    image = image.reshape(8, 8)
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
-    ax.set_title(f"Prediction: {prediction}")
-
-###############################################################################
-# :func:`~sklearn.metrics.classification_report` builds a text report showing
-# the main classification metrics.
-
-# 8. Evaluation
-print(
-    f"Classification report for classifier {model}:\n"
-    f"{metrics.classification_report(y_test, predicted)}\n"
-)
-
-###############################################################################
-# We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
-# true digit values and the predicted digit values.
-
-disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, predicted)
-disp.figure_.suptitle("Confusion Matrix")
-print(f"Confusion matrix:\n{disp.confusion_matrix}")
-
-plt.show()
-
-###############################################################################
-# If the results from evaluating a classifier are stored in the form of a
-# :ref:`confusion matrix <confusion_matrix>` and not in terms of `y_true` and
-# `y_pred`, one can still build a :func:`~sklearn.metrics.classification_report`
-# as follows:
-
-
-# The ground truth and predicted lists
-y_true = []
-y_pred = []
-cm = disp.confusion_matrix
-
-# For each cell in the confusion matrix, add the corresponding ground truths
-# and predictions to the lists
-for gt in range(len(cm)):
-    for pred in range(len(cm)):
-        y_true += [gt] * cm[gt][pred]
-        y_pred += [pred] * cm[gt][pred]
-
-print(
-    "Classification report rebuilt from confusion matrix:\n"
-    f"{metrics.classification_report(y_true, y_pred)}\n"
-)
+        print("test_size={:.2f} dev_size={:.2f} train_size={:.2f} train_acc={:.2f} dev_acc={:.2f} test_acc={:.2f}".format(test_size, dev_size, train_size, train_acc, dev_acc, test_acc))
