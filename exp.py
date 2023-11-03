@@ -1,50 +1,88 @@
 """
-================================
-Recognizing hand-written digits
-================================
-
-This example shows how scikit-learn can be used to recognize images of
-hand-written digits, from 0-9.
-
+Author: SG , M22AIE241
 """
 
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
+#utils import
+from utils import load_dataset, data_preprocessing, split_train_dev_test,predict_and_eval
+from utils import get_list_of_param_comination, tune_hparams
+import pandas as pd 
+import sys
 
-# Import datasets, classifiers and performance metrics
-from sklearn import metrics, svm
+total_run = int(sys.argv[1])
+dev_size = [float(sys.argv[2])]
+test_size = [float(sys.argv[3])]
+model_type = sys.argv[4]
 
-from utils import preprocess_data, split_data, train_model, read_digits, predict_and_eval, train_test_dev_split, get_hyperparameter_combinations, tune_hparams
 
-# 1. Get the dataset
-X, y = read_digits()
+###########################################################################################
+#1.get/load the dataset
+X,y = load_dataset()
+###for quiz1 
+print("total no of images in datasat",y.shape[0])
+print("size of each image in datasat ", X[0].shape)
 
-# 2. Hyperparameter combinations
-# 2.1. SVM
-gamma_list = [0.001, 0.01, 0.1, 1]
-C_list = [1, 10, 100, 1000]
-h_params={}
-h_params['gamma'] = gamma_list
-h_params['C'] = C_list
-h_params_combinations = get_hyperparameter_combinations(h_params)
+#2.Sanity check of data
 
-test_sizes =  [0.1, 0.2, 0.3, 0.45]
-dev_sizes  =  [0.1, 0.2, 0.3, 0.45]
-for test_size in test_sizes:
-    for dev_size in dev_sizes:
-        train_size = 1- test_size - dev_size
-        # 3. Data splitting -- to create train and test sets                
-        X_train, X_test, X_dev, y_train, y_test, y_dev = train_test_dev_split(X, y, test_size=test_size, dev_size=dev_size)
-        # 4. Data preprocessing
-        X_train = preprocess_data(X_train)
-        X_test = preprocess_data(X_test)
-        X_dev = preprocess_data(X_dev)
-    
-        best_hparams, best_model, best_accuracy  = tune_hparams(X_train, y_train, X_dev, 
-        y_dev, h_params_combinations)
+################################################################################################
+#taking different combinations of train dev and test and reporting results
 
-        test_acc = predict_and_eval(best_model, X_test, y_test)
-        train_acc = predict_and_eval(best_model, X_train, y_train)
-        dev_acc = best_accuracy
+# test_size =  [0.2]
+# dev_size = [0.2]
+# total_run = 5
+results = []
+for run_num in range(total_run):
+    for ts in test_size:
+        for ds in dev_size:
+            #3. Spliting the data
+            X_train, y_train, X_test, y_test, X_dev, y_dev = split_train_dev_test(X, y, test_size=ts, dev_size=ds)  
 
-        print("test_size={:.2f} dev_size={:.2f} train_size={:.2f} train_acc={:.2f} dev_acc={:.2f} test_acc={:.2f}".format(test_size, dev_size, train_size, train_acc, dev_acc, test_acc))
+            #################################################################################################
+            #4. Preprocessing the data
+            X_train = data_preprocessing(X_train)
+            X_test= data_preprocessing(X_test)
+            X_dev =data_preprocessing(X_dev)
+
+            #################################################################################################
+            #5. Classification model training
+            #5.1 SVM
+            #hyper parameter tuning for gamma and C
+            if model_type == 'svm':
+                gamma_values = [0.001, 0.002, 0.005, 0.01, 0.02]
+                C_values = [0.1, 0.2, 0.5, 0.75, 1]
+                list_of_param_comination = get_list_of_param_comination([gamma_values, C_values],  ['gamma', 'C'])
+                best_hparams, best_model, best_val_accuracy = tune_hparams(X_train, y_train, X_dev, y_dev, list_of_param_comination, model_type = model_type)
+
+                #get training accuracy of this best model:
+                train_accuracy, _ = predict_and_eval(best_model, X_train, y_train)
+
+                ################################################################################################
+                #6. Prediction and evaluation on test sat
+                # test accuracy
+                test_accuracy, _ = predict_and_eval(best_model, X_test, y_test)
+
+                #print for github actions
+                print('svm  ','test_size=',ts,' dev_size=',ds,' train_size=',round(1-ts-ds,2),' train_acc=',train_accuracy,' dev_acc',best_val_accuracy,' test_acc=',test_accuracy, ' best_hyper_params=', best_hparams)
+                results.append({'run_num':run_num,'model_type':model_type, 'train_accuracy':train_accuracy, 'val_accuracy':best_val_accuracy,
+                                'test_acc':test_accuracy, 'best_hparams':best_hparams})
+            #5.2 Decision Tree
+            #hyper parameter tunning
+            if model_type == 'tree':
+                max_depth = [5,10,20,30,50,75,100]
+                list_of_param_comination = get_list_of_param_comination([max_depth],  ['max_depth'])
+                best_hparams, best_model, best_val_accuracy = tune_hparams(X_train, y_train, X_dev, y_dev, list_of_param_comination,model_type = model_type)
+
+                #get training accuracy of this best model:
+                train_accuracy, _ = predict_and_eval(best_model, X_train, y_train)
+
+                ################################################################################################
+                #6. Prediction and evaluation on test sat
+                # test accuracy
+                test_accuracy, _ = predict_and_eval(best_model, X_test, y_test)
+
+                #print for github actions
+                print('tree ','test_size=',ts,' dev_size=',ds,' train_size=',round(1-ts-ds,2),' train_acc=',train_accuracy,' dev_acc',best_val_accuracy,' test_acc=',test_accuracy, ' best_hyper_params=', best_hparams)
+                results.append({'run_num':run_num,'model_type':model_type, 'train_accuracy':train_accuracy, 'val_accuracy':best_val_accuracy,
+                                'test_acc':test_accuracy, 'best_hparams':best_hparams})
+
+result_df = pd.DataFrame(results)
+print(result_df.groupby('model_type').describe().T)
