@@ -1,71 +1,86 @@
+#imports
 from sklearn.model_selection import train_test_split
-from sklearn import svm, datasets, metrics
-# we will put all utils here
+from sklearn import datasets, svm, metrics, tree
+import matplotlib.pyplot as plt
+from itertools import product
 
-def get_combinations(param_name, param_values, base_combinations):    
-    new_combinations = []
-    for value in param_values:
-        for combination in base_combinations:
-            combination[param_name] = value
-            new_combinations.append(combination.copy())    
-    return new_combinations
-
-def get_hyperparameter_combinations(dict_of_param_lists):    
-    base_combinations = [{}]
-    for param_name, param_values in dict_of_param_lists.items():
-        base_combinations = get_combinations(param_name, param_values, base_combinations)
-    return base_combinations
-
-def tune_hparams(X_train, y_train, X_dev, y_dev, h_params_combinations):
-    best_accuracy = -1
-    for h_params in h_params_combinations:
-        # 5. Model training
-        model = train_model(X_train, y_train, h_params, model_type="svm")
-        # Predict the value of the digit on the test subset        
-        cur_accuracy = predict_and_eval(model, X_dev, y_dev)
-        if cur_accuracy > best_accuracy:
-            best_accuracy = cur_accuracy
-            best_hparams = h_params
-            best_model = model
-
-    return best_hparams, best_model, best_accuracy 
+#load dataset from sklearn
+def load_dataset():
+    digit_data = datasets.load_digits()
+    X = digit_data.images
+    y = digit_data.target
+    return X,y
 
 
-
-def read_digits():
-    digits = datasets.load_digits()
-    X = digits.images
-    y = digits.target
-    return X, y 
-
-def preprocess_data(data):
-    # flatten the images
+#data preprocessing
+def data_preprocessing(data):
     n_samples = len(data)
     data = data.reshape((n_samples, -1))
     return data
 
-# Split data into 50% train and 50% test subsets
-def split_data(x, y, test_size, random_state=1):
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size,random_state=random_state)
-    return X_train, X_test, y_train, y_test
+#spliting data 
+# def train_test_spliting(X,y):
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=10)
+#     return  X_train, X_test, y_train, y_test
 
-# train the model of choice with the model prameter
-def train_model(x, y, model_params, model_type="svm"):
-    if model_type == "svm":
-        # Create a classifier: a support vector classifier
+def split_train_dev_test(X, y, test_size, dev_size):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, random_state=10)
+    X_train, X_dev, y_train, y_dev = train_test_split(X_train, y_train, test_size = dev_size/(1-test_size), random_state=10)
+    return X_train, y_train, X_test, y_test, X_dev, y_dev
+
+
+
+#model training
+def train_model(X_train, y_train, model_params, model_type):
+    if model_type == 'svm':
         clf = svm.SVC
+    if model_type == 'tree':
+        clf =tree.DecisionTreeClassifier
     model = clf(**model_params)
-    # train the model
-    model.fit(x, y)
+    model.fit(X_train, y_train)
     return model
 
-
-def train_test_dev_split(X, y, test_size, dev_size):
-    X_train_dev, X_test, Y_train_Dev, y_test =  train_test_split(X, y, test_size=test_size, random_state=1)
-    X_train, X_dev, y_train, y_dev = split_data(X_train_dev, Y_train_Dev, dev_size/(1-test_size), random_state=1)
-    return X_train, X_test, X_dev, y_train, y_test, y_dev
-
-# Question 2:
+#prediction and accuracy evaluation
 def predict_and_eval(model, X_test, y_test):
     predicted = model.predict(X_test)
-    return metrics.accuracy_score(y_test, predicted)
+    accuracy = metrics.accuracy_score(y_test, predicted) * 100
+    return accuracy, predicted
+
+
+#Visualize first n sample and show their prediction
+# def visualize_first_n_sample_prediction(X_test, y_pred, n = 4):
+#     _, axes = plt.subplots(nrows=1, ncols=n, figsize=(10, 3))
+#     for ax, image, prediction in zip(axes, X_test, y_pred):
+#         ax.set_axis_off()
+#         image = image.reshape(8, 8)
+#         ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
+#         ax.set_title(f"Prediction: {prediction}")
+
+#return classification report
+# def get_classification_report(y_test, y_pred):
+#     return metrics.classification_report(y_test, y_pred)
+
+
+#this is done in two for loops, irespective of number of params
+#for exmple if there are total 4 params list then it will return all combination in 2 loops
+def get_list_of_param_comination(list_of_param, param_names):
+    list_of_param_comination = []
+    for each in list(product(*list_of_param)):
+        comb = {}
+        for i in range(len(list_of_param)):
+            comb[param_names[i]] = each[i]
+        list_of_param_comination.append(comb)
+    return list_of_param_comination
+
+
+## hparams tuning function as per assignment 3
+def tune_hparams(X_train, y_train, X_dev, y_dev, list_of_all_param_combination, model_type):
+    best_accuracy = -1
+    for hparams in list_of_all_param_combination:
+        model = train_model(X_train=X_train, y_train=y_train, model_params=hparams, model_type=model_type)
+        val_accuracy, _ = predict_and_eval(model, X_dev, y_dev)
+        if val_accuracy > best_accuracy:
+            best_hparams = hparams
+            best_model = model
+            best_accuracy = val_accuracy
+    return best_hparams, best_model, best_accuracy

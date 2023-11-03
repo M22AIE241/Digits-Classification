@@ -1,42 +1,29 @@
-from utils import get_hyperparameter_combinations, train_test_dev_split,read_digits
 
-def test_for_hparam_cominations_count():
-    # a test case to check that all possible combinations of paramers are indeed generated
-    gamma_list = [0.001, 0.01, 0.1, 1]
-    C_list = [1, 10, 100, 1000]
-    h_params={}
-    h_params['gamma'] = gamma_list
-    h_params['C'] = C_list
-    h_params_combinations = get_hyperparameter_combinations(h_params)
-    
-    assert len(h_params_combinations) == len(gamma_list) * len(C_list)
+from utils import get_list_of_param_comination, load_dataset,split_train_dev_test
 
-def test_for_hparam_cominations_values():    
-    gamma_list = [0.001, 0.01]
-    C_list = [1]
-    h_params={}
-    h_params['gamma'] = gamma_list
-    h_params['C'] = C_list
-    h_params_combinations = get_hyperparameter_combinations(h_params)
-    
-    expected_param_combo_1 = {'gamma': 0.001, 'C': 1}
-    expected_param_combo_2 = {'gamma': 0.01, 'C': 1}
+def test_get_list_of_param_comination():
+    gamma_values = [0.001, 0.002, 0.005, 0.01, 0.02]
+    C_values = [0.1, 0.2, 0.5, 0.75, 1]
+    list_of_param = [gamma_values, C_values]
+    param_names =  ['gamma', 'C']
+    assert len(get_list_of_param_comination(list_of_param, param_names)) == len(gamma_values) * len(C_values)
 
-    assert (expected_param_combo_1 in h_params_combinations) and (expected_param_combo_2 in h_params_combinations)
+
+def test_get_list_of_param_comination_values():
+    gamma_values = [0.001, 0.01] 
+    C_values = [0.1]
+    list_of_param = [gamma_values, C_values]
+    param_names =  ['gamma', 'C']
+    hparams_combs = get_list_of_param_comination(list_of_param, param_names)
+    assert ({'gamma':0.001, 'C':0.1} in hparams_combs) and  ({'gamma':0.01, 'C':0.1} in hparams_combs)
 
 
 def test_data_splitting():
-    X, y = read_digits()
-    
-    X = X[:100,:,:]
+    X,y = load_dataset()
+    X = X[:100, :, :]
     y = y[:100]
-    
-    test_size = .1
-    dev_size = .6
+    test_size = 0.1
+    dev_size = 0.6
     train_size = 1 - test_size - dev_size
-
-    X_train, X_test, X_dev, y_train, y_test, y_dev = train_test_dev_split(X, y, test_size=test_size, dev_size=dev_size)
-
-    assert (len(X_train) == 30) 
-    assert (len(X_test) == 10)
-    assert  ((len(X_dev) == 60))
+    X_train, y_train, X_test, y_test, X_dev, y_dev = split_train_dev_test(X, y, test_size, dev_size)
+    assert (X_train.shape[0] == int(train_size*X.shape[0]))  and ( X_test.shape[0] == int(test_size*X.shape[0])) and ( X_dev.shape[0] == int(dev_size*X.shape[0]))
