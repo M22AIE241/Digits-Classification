@@ -25,6 +25,8 @@ WORKDIR /digits
 #create volume to mount it on host
 VOLUME /digits/models
 #run pytest 
-CMD ["pytest"]
+#CMD ["pytest"]
+ENV FLASK_APP=api/app2.py
+CMD ["flask","run","--host=0.0.0.0"]
 #run python script to train model
-ENTRYPOINT ["python","exp.py"]
+# ENTRYPOINT ["python","exp.py"]
