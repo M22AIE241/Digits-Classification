@@ -107,3 +107,11 @@ def tune_hparams_logistic_regression(X_train, y_train, X_dev, y_dev, list_of_all
             best_model = model
             best_accuracy = val_accuracy
     return best_hparams, best_model, best_accuracy
+
+
+def get_loaded_model_params(model_path = 'models/M22AIE227_lr_lbfgs.joblib'):
+    lr_model = load(model_path)
+    param_dict = lr_model.get_params()
+    solver = param_dict['solver']
+    print("Loaded model solver parameters is : ", solver )
+    return solver

@@ -1,7 +1,7 @@
-
+#major : M22AIE241
 #utils import
 from utils import load_dataset, data_preprocessing, split_train_dev_test,predict_and_eval
-from utils import get_list_of_param_comination, tune_hparams ,tune_hparams_logistic_regression
+from utils import get_list_of_param_comination, tune_hparams ,tune_hparams_logistic_regression,get_loaded_model_params
 # import pandas as pd 
 import sys
 import argparse
@@ -90,29 +90,6 @@ for run_num in range(args.total_run):
                 
 
                 #hyperparameter tuning
-            # if args.model_type == 'logistic_regression':
-            #     solvers = ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
-            #     list_of_param_combination = get_list_of_param_comination([solvers], ['solver'])
-            #     best_hparams, best_model, best_val_accuracy = tune_hparams_logistic_regression(X_train, y_train, X_dev, y_dev, list_of_param_combination)
-
-            #     # get training accuracy of this best model:
-            #     train_accuracy, candidate_pred = predict_and_eval(best_model, X_train, y_train)
-
-            #     ################################################################################################
-            #     #6. Prediction and evaluation on test set
-            #     # test accuracy
-            #     test_accuracy, candidate_pred = predict_and_eval(best_model, X_test, y_test)
-
-            #     # print for github actions
-            #     print(f'Logistic Regression model test_size={ts} dev_size={ds} train_size={round(1-ts-ds, 2)} train_acc={train_accuracy} dev_acc={best_val_accuracy} test_acc={test_accuracy} best_hyper_params={best_hparams}')
-            #     results.append({'run_num': run_num, 'model_type': args.model_type, 'train_accuracy': train_accuracy, 'val_accuracy': best_val_accuracy,
-            #                     'test_acc': test_accuracy, 'best_hparams': best_hparams})
-
-            #     # save the model
-            #     model_name = f"M22AIE241_lr_{best_hparams['solver']}.joblib"
-            #     dump(best_model, f"models/{model_name}")
-
-                #hyperparameter tuning
             if args.model_type == 'logistic_regression':
                 solvers = ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
                 results_per_solver = []
@@ -154,7 +131,8 @@ for run_num in range(args.total_run):
                     print(f"Solver: {result['solver']}, Mean Test Accuracy: {result['test_accuracy']:.2f}, Std Test Accuracy: 0.00")
 
 
-
+            ###print model parameters:
+            get_loaded_model_params()
 
 
             if args.prod_model_path is not None:
