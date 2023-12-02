@@ -22,7 +22,10 @@ jobs:
         run:  pip3 install --no-cache-dir -r requirements.txt
       - name: Run pytest cases
         run: pytest
-      - name: Run bash script to build and run docker image
-        run: |
-            chmod +x ./docker_run.sh
-            ./docker_run.sh
+      - name: Run exp_major.py
+        run: python exp_major.py --total_run 4 --dev_size 0.2 --test_size 0.2 --model_type logistic_regression
+
+      # - name: Run bash script to build and run docker image
+      #   run: |
+      #     chmod +x ./docker_run.sh
+      #     ./docker_run.sh

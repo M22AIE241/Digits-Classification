@@ -1,10 +1,14 @@
+#imports
 from sklearn.model_selection import train_test_split
 from sklearn import datasets, svm, metrics, tree
 import matplotlib.pyplot as plt
 from itertools import product
 from joblib import dump, load
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 
 
+#load dataset from sklearn
 def load_dataset():
     digit_data = datasets.load_digits()
     X = digit_data.images
@@ -12,11 +16,24 @@ def load_dataset():
     return X,y
 
 
+#data preprocessing
 def data_preprocessing(data):
     n_samples = len(data)
     data = data.reshape((n_samples, -1))
-    return data
+    #return data
+ # Add unit normalization using StandardScaler
+    scaler = StandardScaler()
+    data_normalized = scaler.fit_transform(data)
 
+    # Reshape the normalized data back to the original shape
+    data_normalized = data_normalized.reshape((n_samples, *data.shape[1:]))
+
+    return data_normalized
+
+#spliting data 
+# def train_test_spliting(X,y):
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=10)
+#     return  X_train, X_test, y_train, y_test
 
 def split_train_dev_test(X, y, test_size, dev_size):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, random_state=10)
@@ -25,6 +42,7 @@ def split_train_dev_test(X, y, test_size, dev_size):
 
 
 
+#model training
 def train_model(X_train, y_train, model_params, model_type):
     if model_type == 'svm':
         clf = svm.SVC
@@ -40,6 +58,13 @@ def train_model(X_train, y_train, model_params, model_type):
         print(str(e))
     return model
 
+# Model training for Logistic Regression
+def train_logistic_regression(X_train, y_train, model_params):
+    model = LogisticRegression(**model_params)
+    model.fit(X_train, y_train)
+    return model
+
+#prediction and accuracy evaluation
 def predict_and_eval(model, X_test, y_test):
     predicted = model.predict(X_test)
     accuracy = metrics.accuracy_score(y_test, predicted) * 100
@@ -47,6 +72,8 @@ def predict_and_eval(model, X_test, y_test):
 
 
 
+#this is done in two for loops, irespective of number of params
+#for exmple if there are total 4 params list then it will return all combination in 2 loops
 def get_list_of_param_comination(list_of_param, param_names):
     list_of_param_comination = []
     for each in list(product(*list_of_param)):
@@ -57,10 +84,23 @@ def get_list_of_param_comination(list_of_param, param_names):
     return list_of_param_comination
 
 
+## hparams tuning function as per assignment 3
 def tune_hparams(X_train, y_train, X_dev, y_dev, list_of_all_param_combination, model_type):
     best_accuracy = -1
     for hparams in list_of_all_param_combination:
         model = train_model(X_train=X_train, y_train=y_train, model_params=hparams, model_type=model_type)
+        val_accuracy, _ = predict_and_eval(model, X_dev, y_dev)
+        if val_accuracy > best_accuracy:
+            best_hparams = hparams
+            best_model = model
+            best_accuracy = val_accuracy
+    return best_hparams, best_model, best_accuracy
+
+# tune_hparams function for Logistic Regression
+def tune_hparams_logistic_regression(X_train, y_train, X_dev, y_dev, list_of_all_param_combination):
+    best_accuracy = -1
+    for hparams in list_of_all_param_combination:
+        model = train_logistic_regression(X_train=X_train, y_train=y_train, model_params=hparams)
         val_accuracy, _ = predict_and_eval(model, X_dev, y_dev)
         if val_accuracy > best_accuracy:
             best_hparams = hparams
