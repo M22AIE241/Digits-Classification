@@ -40,4 +40,4 @@ def test_lr_model_solver():
     model_path = 'models/M22AIE241_lr_lbfgs.joblib'
     solver_in_path = model_path.split('.')[0].split('_')[-1]
     solver_from_model = get_loaded_model_params(model_path)
-    assert(solver_from_model == solver_in_path)
+    assert solver_from_model == solver_in_path, f"Solver mismatch: Expected {solver_in_path}, got {solver_from_model} for model at {model_path}"

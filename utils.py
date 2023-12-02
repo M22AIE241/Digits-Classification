@@ -115,3 +115,4 @@ def get_loaded_model_params(model_path = 'models/M22AIE241_lr_lbfgs.joblib'):
     solver = param_dict['solver']
     print("Loaded model solver parameters is : ", solver )
     return solver
+
