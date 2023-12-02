@@ -1,9 +1,0 @@
-1.https://www.atlassian.com/git/tutorials/atlassian-git-cheatsheet
-
-2.https://scikit-image.org/docs/stable/auto_examples/features_detection/plot_sift.html
-
-3.https://dev.to/sfpear/miniconda-in-wsl-3642
-
-4.https://docs.github.com/en/enterprise-cloud@latest/authentication/authenticating-with-saml-single-sign-on/authorizing-an-ssh-key-for-use-with-saml-single-sign-on
-
-5.https://docs.docker.com/engine/install/ubuntu/
