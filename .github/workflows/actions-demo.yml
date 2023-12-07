@@ -20,5 +20,5 @@ jobs:
       - run: echo " This job's status is ${{ job.status }}."
       - name: Install dep
         run:  pip3 install --no-cache-dir -r requirements.txt
-      - name: Run pytest cases
-        run: pytest
+      - name: Run Docker image
+        run: ./docker_run.sh
